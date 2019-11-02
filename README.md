@@ -14,3 +14,4 @@ ___
 - [ControlKit](https://github.com/brunoimbrizi/controlkit.js) - GUI
 - [stats.js](https://github.com/mrdoob/stats.js/) - performance monitor
 # instancing
+# instancing
