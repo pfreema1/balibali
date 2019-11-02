@@ -50,8 +50,47 @@ export default class WebGLView {
 			wireframe: true
 		});
 
+		const instances = 100;
+
+		let instancePositions = [];
+		let instanceQuaternions = [];
+		let instanceScales = [];
+
+		// blueprint
 		this.object3D = new THREE.Mesh(geometry, material);
 		this.scene.add(this.object3D);
+
+		for (let i = 0; i < instances; i++) {
+			let position = this.object3D.position;
+			let quaternion = this.object3D.quaternion;
+			let scale = this.object3D.scale;
+
+			position.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
+			quaternion.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
+			scale.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+
+			instancePositions.push(position.x, position.y, position.z);
+			instanceQuaternions.push(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
+			instanceScales.push(scale.x, scale.y, scale.z);
+		}
+
+		let instancedGeometry = new THREE.InstancedBufferGeometry();
+		instancedGeometry.attributes.position = geometry.attributes.position;
+
+		instancedGeometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(new Float32Array(instancePositions), 3));
+		instancedGeometry.setAttribute('instanceQuaternion', new THREE.InstancedBufferAttribute(new Float32Array(instanceQuaternions), 4));
+		instancedGeometry.setAttribute('instanceScale', new THREE.InstancedBufferAttribute(new Float32Array(instanceScales), 3));
+
+		let instanceMaterial = new THREE.ShaderMaterial({
+			uniforms: {},
+			vertexShader: glslify(require('../../shaders/default.vert')),
+			fragmentShader: glslify(require('../../shaders/default.frag')),
+			wireframe: true
+		});
+
+		let instancedMesh = new THREE.Mesh(instancedGeometry, instanceMaterial);
+		this.scene.add(instancedMesh);
+
 	}
 
 	initPostProcessing() {
@@ -64,7 +103,7 @@ export default class WebGLView {
 		const contrastEffect = new BrightnessContrastEffect({ contrast: 1 });
 		const contrastPass = new EffectPass(this.camera, contrastEffect);
 		contrastPass.renderToScreen = true;
-		
+
 		this.composer.addPass(renderPass);
 		this.composer.addPass(contrastPass);
 
@@ -78,7 +117,7 @@ export default class WebGLView {
 
 	update() {
 		const delta = this.clock.getDelta();
-		
+
 		if (this.trackball) this.trackball.update();
 	}
 
