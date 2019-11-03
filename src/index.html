@@ -1,12 +1,45 @@
 <!DOCTYPE html>
 <html>
-<head>
-	<meta charset="utf-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1, user-scalable=no" />
-	<title>Bruno Imbrizi : Prototype</title>
-	<link rel="stylesheet" href="styles/main.css">
-</head>
-<body>
-	<div class="container"></div>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=1, user-scalable=no"
+    />
+    <title>MEOW</title>
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <div class="container"></div>
+    <script id="vertexShader" type="x-shader/x-vertex">
+      precision highp float;
+      attribute vec3 instancePosition;
+      attribute vec4 instanceQuaternion;
+      attribute vec3 instanceScale;
+      varying vec3 vColor;
+      uniform float uTime;
+
+      vec3 applyTRS( vec3 position, vec3 translation, vec4 quaternion, vec3 scale ) {
+        quaternion.y += uTime * 0.05;
+      	position *= scale;
+        position += 2.0 * cross( quaternion.xyz, cross( quaternion.xyz, position ) + quaternion.w * position );
+        position.y += sin(uTime * 0.5);
+
+      	return position + translation;
+      }
+      void main(){
+      	vColor = color;
+      	vec3 transformed = applyTRS( position.xyz, instancePosition, instanceQuaternion, instanceScale );
+      	gl_Position = projectionMatrix * modelViewMatrix * vec4( transformed, 1.0 );
+      }
+    </script>
+
+    <script id="fragmentShader" type="x-shader/x-fragment">
+      precision highp float;
+      varying vec3 vColor;
+      void main() {
+      	gl_FragColor = vec4( vColor, 1.0 );
+      }
+    </script>
+  </body>
 </html>

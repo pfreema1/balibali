@@ -1,38 +1,38 @@
 const path = require('path');
 const webpack = require('webpack');
-const CleanWebpackPlugin = require('clean-webpack-plugin');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 const CopyWebpackPlugin = require('copy-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const __root = path.resolve(__dirname, '../');
 
 module.exports = {
-	entry: {
-		index: ['@babel/polyfill', './src/scripts/index.js'],
-	},
-	output: {
-		path: path.resolve(__root, 'dist'),
-		filename: 'scripts/[name].[chunkhash].js',
-		chunkFilename: 'scripts/[name].[chunkhash].js',
-	},
-	module: {
-		rules: [
-			{
-				test: /\.js$/,
-				use: {
-					loader: 'babel-loader',
-					options: {
-						presets: ['@babel/preset-env'],
-						plugins: ['@babel/plugin-syntax-dynamic-import']
-					}
-				},
-				exclude: /node_modules\/(?!(postprocessing)\/).*/,
-			},
-			{
-				test: /\.(glsl|frag|vert)$/,
-				use: ['glslify-import-loader', 'raw-loader', 'glslify-loader']
-			},
-			/*
+  entry: {
+    index: ['@babel/polyfill', './src/scripts/index.js']
+  },
+  output: {
+    path: path.resolve(__root, 'dist'),
+    filename: 'scripts/[name].[chunkhash].js',
+    chunkFilename: 'scripts/[name].[chunkhash].js'
+  },
+  module: {
+    rules: [
+      {
+        test: /\.js$/,
+        use: {
+          loader: 'babel-loader',
+          options: {
+            presets: ['@babel/preset-env'],
+            plugins: ['@babel/plugin-syntax-dynamic-import']
+          }
+        },
+        exclude: /node_modules\/(?!(postprocessing)\/).*/
+      },
+      {
+        test: /\.(glsl|frag|vert)$/,
+        use: ['glslify-import-loader', 'raw-loader', 'glslify-loader']
+      }
+      /*
 			{
 				test: /\.css$/,
 				use: ['style-loader', 'css-loader']
@@ -46,20 +46,17 @@ module.exports = {
 				use: 'file-loader'
 			}
 			*/
-		]
-	},
-	plugins: [
-		new CleanWebpackPlugin(
-			['dist'],
-			{ root: __root },
-		),
-		new CopyWebpackPlugin([
-			{
-				from: path.resolve(__root, 'static'),
-			}
-		]),
-		new HtmlWebpackPlugin({
-			template: './src/index.html',
-		}),
-	]
+    ]
+  },
+  plugins: [
+    new CleanWebpackPlugin(),
+    new CopyWebpackPlugin([
+      {
+        from: path.resolve(__root, 'static')
+      }
+    ]),
+    new HtmlWebpackPlugin({
+      template: './src/index.html'
+    })
+  ]
 };

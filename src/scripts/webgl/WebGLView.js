@@ -2,146 +2,210 @@ import * as THREE from 'three';
 import glslify from 'glslify';
 
 import {
-	EffectComposer,
-	BrightnessContrastEffect,
-	EffectPass,
-	RenderPass,
-	ShaderPass,
-	BlendFunction,
+  EffectComposer,
+  BrightnessContrastEffect,
+  EffectPass,
+  RenderPass,
+  ShaderPass,
+  BlendFunction
 } from 'postprocessing';
 
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 
+function remap(t, old_min, old_max, new_min, new_max) {
+  let old_range = old_max - old_min;
+  let normalizedT = t - old_min;
+  let normalizedVal = normalizedT / old_range;
+  let new_range = new_max - new_min;
+  let newVal = normalizedVal * new_range + new_min;
+  return newVal;
+}
+
 export default class WebGLView {
+  constructor(app) {
+    this.app = app;
 
-	constructor(app) {
-		this.app = app;
+    this.initThree();
+    this.initObject();
+    this.initControls();
+    this.initPostProcessing();
+  }
 
-		this.initThree();
-		this.initObject();
-		this.initControls();
-		this.initPostProcessing();
-	}
+  initThree() {
+    this.scene = new THREE.Scene();
 
-	initThree() {
-		this.scene = new THREE.Scene();
+    this.camera = new THREE.PerspectiveCamera(
+      50,
+      window.innerWidth / window.innerHeight,
+      0.01,
+      100
+    );
+    this.camera.position.z = 4;
 
-		this.camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 1, 10000);
-		this.camera.position.z = 300;
+    this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
-		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    this.clock = new THREE.Clock();
+  }
 
-		this.clock = new THREE.Clock();
-	}
+  initControls() {
+    this.trackball = new TrackballControls(
+      this.camera,
+      this.renderer.domElement
+    );
+    this.trackball.rotateSpeed = 2.0;
+    this.trackball.enabled = true;
+  }
 
-	initControls() {
-		this.trackball = new TrackballControls(this.camera, this.renderer.domElement);
-		this.trackball.rotateSpeed = 2.0;
-		this.trackball.enabled = true;
-	}
+  initObject() {
+    var geometry = new THREE.RingBufferGeometry(0.4, 1, 35);
 
-	initObject() {
-		const geometry = new THREE.IcosahedronBufferGeometry(50, 1);
+    let colors = [];
 
-		const material = new THREE.ShaderMaterial({
-			uniforms: {},
-			vertexShader: glslify(require('../../shaders/default.vert')),
-			fragmentShader: glslify(require('../../shaders/default.frag')),
-			wireframe: true
-		});
+    for (var i = 0, l = geometry.attributes.position.count; i < l; i++) {
+      let random = Math.random();
+      colors.push(
+        remap(random, 0, 1, 0.5, 1.0),
+        remap(random, 0, 1, 0.5, 1.0),
+        remap(random, 0, 1, 0.5, 1.0)
+      );
+    }
 
-		const instances = 100;
+    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
 
-		let instancePositions = [];
-		let instanceQuaternions = [];
-		let instanceScales = [];
+    const material = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      vertexColors: THREE.VertexColors
+    });
 
-		// blueprint
-		this.object3D = new THREE.Mesh(geometry, material);
-		this.scene.add(this.object3D);
+    //
 
-		for (let i = 0; i < instances; i++) {
-			let position = this.object3D.position;
-			let quaternion = this.object3D.quaternion;
-			let scale = this.object3D.scale;
+    const instances = 1000;
 
-			position.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
-			quaternion.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
-			scale.set(Math.random() * 2, Math.random() * 2, Math.random() * 2);
+    let instancePositions = [];
+    let instanceQuaternions = [];
+    let instanceScales = [];
 
-			instancePositions.push(position.x, position.y, position.z);
-			instanceQuaternions.push(quaternion.x, quaternion.y, quaternion.z, quaternion.w);
-			instanceScales.push(scale.x, scale.y, scale.z);
-		}
+    // blueprint
+    // this.object3D = new THREE.Mesh(geometry, material);
+    // this.scene.add(this.object3D);
 
-		let instancedGeometry = new THREE.InstancedBufferGeometry();
-		instancedGeometry.attributes.position = geometry.attributes.position;
+    for (let i = 0; i < instances; i++) {
+      var mesh = new THREE.Mesh(geometry, material);
+      //   this.scene.add(mesh);
 
-		instancedGeometry.setAttribute('instancePosition', new THREE.InstancedBufferAttribute(new Float32Array(instancePositions), 3));
-		instancedGeometry.setAttribute('instanceQuaternion', new THREE.InstancedBufferAttribute(new Float32Array(instanceQuaternions), 4));
-		instancedGeometry.setAttribute('instanceScale', new THREE.InstancedBufferAttribute(new Float32Array(instanceScales), 3));
+      let position = mesh.position;
+      let quaternion = mesh.quaternion;
+      let scale = mesh.scale;
 
-		let instanceMaterial = new THREE.ShaderMaterial({
-			uniforms: {},
-			vertexShader: glslify(require('../../shaders/default.vert')),
-			fragmentShader: glslify(require('../../shaders/default.frag')),
-			wireframe: true
-		});
+      position.set(Math.random() * 4 - 2, i, Math.random() * 4 - 2);
+      quaternion.set(1, 1, 1, 1);
+      scale.set(1, 1, 1);
 
-		let instancedMesh = new THREE.Mesh(instancedGeometry, instanceMaterial);
-		this.scene.add(instancedMesh);
+      instancePositions.push(position.x, position.y, position.z);
+      instanceQuaternions.push(
+        quaternion.x,
+        quaternion.y,
+        quaternion.z,
+        quaternion.w
+      );
+      instanceScales.push(scale.x, scale.y, scale.z);
+    }
 
-	}
+    let instancedGeometry = new THREE.InstancedBufferGeometry();
+    instancedGeometry.attributes.position = geometry.attributes.position;
+    instancedGeometry.attributes.color = geometry.attributes.color;
 
-	initPostProcessing() {
-		this.composer = new EffectComposer(this.renderer);
-		this.composer.enabled = false;
+    instancedGeometry.setAttribute(
+      'instancePosition',
+      new THREE.InstancedBufferAttribute(new Float32Array(instancePositions), 3)
+    );
+    instancedGeometry.setAttribute(
+      'instanceQuaternion',
+      new THREE.InstancedBufferAttribute(
+        new Float32Array(instanceQuaternions),
+        4
+      )
+    );
+    instancedGeometry.setAttribute(
+      'instanceScale',
+      new THREE.InstancedBufferAttribute(new Float32Array(instanceScales), 3)
+    );
 
-		const renderPass = new RenderPass(this.scene, this.camera);
-		renderPass.renderToScreen = false;
+    //
 
-		const contrastEffect = new BrightnessContrastEffect({ contrast: 1 });
-		const contrastPass = new EffectPass(this.camera, contrastEffect);
-		contrastPass.renderToScreen = true;
+    this.instanceShaderMat = new THREE.ShaderMaterial({
+      uniforms: {
+        uTime: { value: 0.0 }
+      },
+      vertexShader: document.getElementById('vertexShader').textContent,
+      fragmentShader: document.getElementById('fragmentShader').textContent,
+      vertexColors: true
+    });
 
-		this.composer.addPass(renderPass);
-		this.composer.addPass(contrastPass);
+    let instancedMesh = new THREE.Mesh(
+      instancedGeometry,
+      this.instanceShaderMat
+    );
+    instancedMesh.position.x = 0.1;
+    this.scene.add(instancedMesh);
+    console.log(this.scene);
+  }
 
-		// kickstart composer
-		this.composer.render(1);
-	}
+  initPostProcessing() {
+    this.composer = new EffectComposer(this.renderer);
+    this.composer.enabled = false;
 
-	// ---------------------------------------------------------------------------------------------
-	// PUBLIC
-	// ---------------------------------------------------------------------------------------------
+    const renderPass = new RenderPass(this.scene, this.camera);
+    renderPass.renderToScreen = false;
 
-	update() {
-		const delta = this.clock.getDelta();
+    const contrastEffect = new BrightnessContrastEffect({ contrast: 1 });
+    const contrastPass = new EffectPass(this.camera, contrastEffect);
+    contrastPass.renderToScreen = true;
 
-		if (this.trackball) this.trackball.update();
-	}
+    this.composer.addPass(renderPass);
+    this.composer.addPass(contrastPass);
 
-	draw() {
-		if (this.composer && this.composer.enabled) this.composer.render();
-		else this.renderer.render(this.scene, this.camera);
-	}
+    // kickstart composer
+    this.composer.render(1);
+  }
 
-	// ---------------------------------------------------------------------------------------------
-	// EVENT HANDLERS
-	// ---------------------------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------------------------
+  // PUBLIC
+  // ---------------------------------------------------------------------------------------------
 
-	resize() {
-		if (!this.renderer) return;
-		this.camera.aspect = window.innerWidth / window.innerHeight;
-		this.camera.updateProjectionMatrix();
+  update() {
+    const delta = this.clock.getDelta();
+    const time = performance.now() * 0.0005;
 
-		this.fovHeight = 2 * Math.tan((this.camera.fov * Math.PI) / 180 / 2) * this.camera.position.z;
-		this.fovWidth = this.fovHeight * this.camera.aspect;
+    this.instanceShaderMat.uniforms.uTime.value = time;
 
-		this.renderer.setSize(window.innerWidth, window.innerHeight);
+    if (this.trackball) this.trackball.update();
+  }
 
-		this.composer.setSize(window.innerWidth, window.innerHeight);
+  draw() {
+    if (this.composer && this.composer.enabled) this.composer.render();
+    else this.renderer.render(this.scene, this.camera);
+  }
 
-		if (this.trackball) this.trackball.handleResize();
-	}
+  // ---------------------------------------------------------------------------------------------
+  // EVENT HANDLERS
+  // ---------------------------------------------------------------------------------------------
+
+  resize() {
+    if (!this.renderer) return;
+    this.camera.aspect = window.innerWidth / window.innerHeight;
+    this.camera.updateProjectionMatrix();
+
+    this.fovHeight =
+      2 *
+      Math.tan((this.camera.fov * Math.PI) / 180 / 2) *
+      this.camera.position.z;
+    this.fovWidth = this.fovHeight * this.camera.aspect;
+
+    this.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    this.composer.setSize(window.innerWidth, window.innerHeight);
+
+    if (this.trackball) this.trackball.handleResize();
+  }
 }
