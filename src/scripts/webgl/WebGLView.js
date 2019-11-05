@@ -40,7 +40,7 @@ export default class WebGLView {
       0.01,
       100
     );
-    this.camera.position.z = 4;
+    this.camera.position.z = 2;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
@@ -57,96 +57,56 @@ export default class WebGLView {
   }
 
   initObject() {
-    var geometry = new THREE.RingBufferGeometry(0.4, 1, 35);
+    const instances = 10000;
+    let positions = [];
+    positions.push(0.025, -0.025, 0);
+    positions.push(-0.025, 0.025, 0);
+    positions.push(0, 0, 0.025);
 
     let colors = [];
 
-    for (var i = 0, l = geometry.attributes.position.count; i < l; i++) {
-      let random = Math.random();
-      colors.push(
-        remap(random, 0, 1, 0.5, 1.0),
-        remap(random, 0, 1, 0.5, 1.0),
-        remap(random, 0, 1, 0.5, 1.0)
-      );
-    }
-
-    geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-
-    const material = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      vertexColors: THREE.VertexColors
-    });
-
-    //
-
-    const instances = 1000;
-
-    let instancePositions = [];
-    let instanceQuaternions = [];
-    let instanceScales = [];
-
-    // blueprint
-    // this.object3D = new THREE.Mesh(geometry, material);
-    // this.scene.add(this.object3D);
+    let offsets = [];
 
     for (let i = 0; i < instances; i++) {
-      var mesh = new THREE.Mesh(geometry, material);
-      //   this.scene.add(mesh);
-
-      let position = mesh.position;
-      let quaternion = mesh.quaternion;
-      let scale = mesh.scale;
-
-      position.set(Math.random() * 4 - 2, i, Math.random() * 4 - 2);
-      quaternion.set(1, 1, 1, 1);
-      scale.set(1, 1, 1);
-
-      instancePositions.push(position.x, position.y, position.z);
-      instanceQuaternions.push(
-        quaternion.x,
-        quaternion.y,
-        quaternion.z,
-        quaternion.w
+      offsets.push(
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1,
+        Math.random() * 2 - 1
       );
-      instanceScales.push(scale.x, scale.y, scale.z);
+
+      let random = Math.random();
+      colors.push(Math.random(), Math.random(), Math.random());
     }
 
     let instancedGeometry = new THREE.InstancedBufferGeometry();
-    instancedGeometry.attributes.position = geometry.attributes.position;
-    instancedGeometry.attributes.color = geometry.attributes.color;
-
     instancedGeometry.setAttribute(
-      'instancePosition',
-      new THREE.InstancedBufferAttribute(new Float32Array(instancePositions), 3)
+      'position',
+      new THREE.Float32BufferAttribute(positions, 3)
     );
     instancedGeometry.setAttribute(
-      'instanceQuaternion',
-      new THREE.InstancedBufferAttribute(
-        new Float32Array(instanceQuaternions),
-        4
-      )
+      'color',
+      new THREE.Float32BufferAttribute(colors, 3)
     );
     instancedGeometry.setAttribute(
-      'instanceScale',
-      new THREE.InstancedBufferAttribute(new Float32Array(instanceScales), 3)
+      'offset',
+      new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3)
     );
 
-    //
-
-    this.instanceShaderMat = new THREE.ShaderMaterial({
+    this.instanceShaderMat = new THREE.RawShaderMaterial({
       uniforms: {
         uTime: { value: 0.0 }
       },
       vertexShader: document.getElementById('vertexShader').textContent,
       fragmentShader: document.getElementById('fragmentShader').textContent,
-      vertexColors: true
+      transparent: true,
+      side: THREE.DoubleSide
     });
 
     let instancedMesh = new THREE.Mesh(
       instancedGeometry,
       this.instanceShaderMat
     );
-    instancedMesh.position.x = 0.1;
+
     this.scene.add(instancedMesh);
     console.log(this.scene);
   }

@@ -13,24 +13,22 @@
     <div class="container"></div>
     <script id="vertexShader" type="x-shader/x-vertex">
       precision highp float;
-      attribute vec3 instancePosition;
-      attribute vec4 instanceQuaternion;
-      attribute vec3 instanceScale;
+
+      uniform mat4 modelViewMatrix;
+      uniform mat4 projectionMatrix;
+
+      attribute vec3 position;
+      attribute vec3 offset;
+      attribute vec4 color;
+
+      varying vec3 vPosition;
       varying vec3 vColor;
-      uniform float uTime;
 
-      vec3 applyTRS( vec3 position, vec3 translation, vec4 quaternion, vec3 scale ) {
-        quaternion.y += uTime * 0.05;
-      	position *= scale;
-        position += 2.0 * cross( quaternion.xyz, cross( quaternion.xyz, position ) + quaternion.w * position );
-        position.y += sin(uTime * 0.5);
+      void main() {
+        vColor = vec3(color);
+        vPosition = offset + position;
 
-      	return position + translation;
-      }
-      void main(){
-      	vColor = color;
-      	vec3 transformed = applyTRS( position.xyz, instancePosition, instanceQuaternion, instanceScale );
-      	gl_Position = projectionMatrix * modelViewMatrix * vec4( transformed, 1.0 );
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(vPosition, 1.0);
       }
     </script>
 
