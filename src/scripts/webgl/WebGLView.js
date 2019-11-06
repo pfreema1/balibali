@@ -11,6 +11,7 @@ import {
 } from 'postprocessing';
 
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
+import { MeshDepthMaterial } from 'three';
 
 function remap(t, old_min, old_max, new_min, new_max) {
   let old_range = old_max - old_min;
@@ -26,7 +27,8 @@ export default class WebGLView {
     this.app = app;
 
     this.initThree();
-    this.initObject();
+    this.initObjects();
+    this.initLights();
     this.initControls();
     this.initPostProcessing();
   }
@@ -40,7 +42,7 @@ export default class WebGLView {
       0.01,
       100
     );
-    this.camera.position.z = 4;
+    this.camera.position.z = 30;
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
@@ -56,59 +58,55 @@ export default class WebGLView {
     this.trackball.enabled = true;
   }
 
-  initObject() {
-    const instances = 10000;
-    let positions = [];
-    positions.push(0.025, -0.025, 0);
-    positions.push(-0.025, 0.025, 0);
-    positions.push(0, 0, 0.025);
+  initLights() {
+    this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
+    this.pointLight.position.set(0, 0, 50);
+    this.scene.add(this.pointLight);
+  }
 
-    let colors = [];
+  initObjects() {
+    this.particleCount = 100;
+    this.particles = [];
 
-    let offsets = [];
+    for (let i = 0; i < this.particleCount; i++) {
+      let mesh = this.createMesh();
+      this.randomizeTransform(mesh);
+      this.scene.add(mesh);
 
-    for (let i = 0; i < instances; i++) {
-      offsets.push(
-        Math.random() * 2 - 1,
-        Math.random() * 2 - 1,
-        Math.random() * 2 - 1
-      );
-
-      let random = Math.random();
-      colors.push(Math.random(), Math.random(), Math.random());
+      this.particles.push(mesh);
     }
+  }
 
-    let instancedGeometry = new THREE.InstancedBufferGeometry();
-    instancedGeometry.setAttribute(
-      'position',
-      new THREE.Float32BufferAttribute(positions, 3)
-    );
-    instancedGeometry.setAttribute(
-      'color',
-      new THREE.Float32BufferAttribute(colors, 3)
-    );
-    instancedGeometry.setAttribute(
-      'offset',
-      new THREE.InstancedBufferAttribute(new Float32Array(offsets), 3)
-    );
+  randomizeTransform(mesh) {
+    /*
+		x range:  -30 to 30
+		y range:  -15 to 15
+		z range: 10 to -50
+	*/
+    mesh.position.x = remap(Math.random(), 0, 1, -30, 30);
+    mesh.position.y = remap(Math.random(), 0, 1, -15, 15);
+    mesh.position.z = remap(Math.random(), 0, 1, -50, 10);
 
-    this.instanceShaderMat = new THREE.RawShaderMaterial({
-      uniforms: {
-        uTime: { value: 0.0 }
-      },
-      vertexShader: document.getElementById('vertexShader').textContent,
-      fragmentShader: document.getElementById('fragmentShader').textContent,
-      transparent: true,
-      side: THREE.DoubleSide
-    });
+    mesh.rotation.x = Math.random() * 2 * Math.PI;
+    mesh.rotation.y = Math.random() * 2 * Math.PI;
+    mesh.rotation.z = Math.random() * 2 * Math.PI;
+  }
 
-    let instancedMesh = new THREE.Mesh(
-      instancedGeometry,
-      this.instanceShaderMat
-    );
+  updateParticles() {
+    console.log('foo');
+    for (let i = 0; i < this.particleCount; i++) {
+      let particle = this.particles[i];
 
-    this.scene.add(instancedMesh);
-    console.log(this.scene);
+      particle.position.y += Math.random() * 0.03 + 0.01;
+      particle.rotation.x += Math.random() * 0.01;
+      particle.rotation.z += Math.random() * 0.01;
+    }
+  }
+
+  createMesh() {
+    let geo = new THREE.TetrahedronBufferGeometry(1, 0);
+    let mat = new THREE.MeshPhongMaterial();
+    return new THREE.Mesh(geo, mat);
   }
 
   initPostProcessing() {
@@ -137,7 +135,9 @@ export default class WebGLView {
     const delta = this.clock.getDelta();
     const time = performance.now() * 0.0005;
 
-    this.instanceShaderMat.uniforms.uTime.value = time;
+    if (this.particleCount) {
+      this.updateParticles();
+    }
 
     if (this.trackball) this.trackball.update();
   }
