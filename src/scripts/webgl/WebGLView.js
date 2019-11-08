@@ -85,7 +85,7 @@ export default class WebGLView {
 	*/
     mesh.position.x = remap(Math.random(), 0, 1, -30, 30);
     mesh.position.y = remap(Math.random(), 0, 1, -15, 15);
-    mesh.position.z = remap(Math.random(), 0, 1, -50, 10);
+    mesh.position.z = remap(Math.random(), 0, 1, -20, 10);
 
     mesh.rotation.x = Math.random() * 2 * Math.PI;
     mesh.rotation.y = Math.random() * 2 * Math.PI;
@@ -105,7 +105,14 @@ export default class WebGLView {
 
   createMesh() {
     let geo = new THREE.TetrahedronBufferGeometry(1, 0);
-    let mat = new THREE.MeshPhongMaterial();
+    // let mat = new THREE.MeshPhongMaterial();
+    // mat.shininess = 100;
+    let mat = new THREE.MeshPhysicalMaterial({
+      roughness: 0.5,
+      metalness: 0.3,
+      reflectivity: 1,
+      clearcoat: 1
+    });
     return new THREE.Mesh(geo, mat);
   }
 
