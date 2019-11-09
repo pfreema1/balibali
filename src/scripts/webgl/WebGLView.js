@@ -24,11 +24,16 @@ export default class WebGLView {
   constructor(app) {
     this.app = app;
 
+    this.init();
+  }
+
+  async init() {
     this.initThree();
     this.initParticlesRenderTarget();
     this.initObjects();
     this.initLights();
     this.initControls();
+    await this.loadLogoTexture();
     // this.initPostProcessing();
     this.initRenderTri();
   }
@@ -42,6 +47,17 @@ export default class WebGLView {
     this.renderer.autoClear = true;
 
     this.clock = new THREE.Clock();
+  }
+
+  loadLogoTexture() {
+    return new Promise((res, rej) => {
+      let loader = new THREE.TextureLoader();
+
+      loader.load('./logo-final-final.png', texture => {
+        this.logoTexture = texture;
+        res();
+      });
+    });
   }
 
   returnRenderTriGeometry() {
