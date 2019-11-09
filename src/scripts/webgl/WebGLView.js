@@ -182,7 +182,7 @@ export default class WebGLView {
 			x range:  -30 to 30
 			y range:  -15 to 15
 			z range: 10 to -50
-		*/
+	*/
     mesh.position.x = remap(Math.random(), 0, 1, -30, 30);
     mesh.position.y = remap(Math.random(), 0, 1, -15, 15);
     mesh.position.z = remap(Math.random(), 0, 1, -20, 10);
