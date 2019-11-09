@@ -38,24 +38,14 @@ export default class WebGLView {
 	initThree() {
 		this.scene = new THREE.Scene();
 
-		// this.camera = new THREE.PerspectiveCamera(
-		// 	50,
-		// 	window.innerWidth / window.innerHeight,
-		// 	0.01,
-		// 	100
-		// );
 		this.camera = new THREE.OrthographicCamera();
-		// this.camera.position.z = 0;
 
 		this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
 
 		this.clock = new THREE.Clock();
 	}
 
-	initRenderTri() {
-		// mostly taken from here: https://medium.com/@luruke/simple-postprocessing-in-three-js-91936ecadfb7
-
-		this.resize();
+	returnRenderTriGeometry() {
 		const geometry = new THREE.BufferGeometry();
 
 		// triangle in clip space coords
@@ -64,6 +54,15 @@ export default class WebGLView {
 		]);
 
 		geometry.addAttribute('position', new THREE.BufferAttribute(vertices, 2));
+
+		return geometry;
+	}
+
+	initRenderTri() {
+		// mostly taken from here: https://medium.com/@luruke/simple-postprocessing-in-three-js-91936ecadfb7
+
+		this.resize();
+		const geometry = this.returnRenderTriGeometry();
 
 		const resolution = new THREE.Vector2();
 		this.renderer.getDrawingBufferSize(resolution);
@@ -74,22 +73,27 @@ export default class WebGLView {
 			depthBuffer: true
 		});
 
-		let material = new THREE.RawShaderMaterial({
+		this.triMaterial = new THREE.RawShaderMaterial({
 			fragmentShader: `
 				precision highp float;
 				uniform sampler2D uScene;
 				uniform vec2 uResolution;
+				uniform float uTime;
 				
 				void main() {
 					vec2 uv = gl_FragCoord.xy / uResolution.xy;
-					vec3 color = vec3(uv, 1.0);
-					color = texture2D(uScene, uv).rgb;
+					vec4 color = texture2D(uScene, uv);
+
+					// wavy line
+					float x = uv.x;
+					float m = sin(x * 8.0 + uTime);
+					uv.y -= m;
+					float line = smoothstep(0.4, 0.5, uv.y) * smoothstep(0.6, 0.5, uv.y);
+
 					
-					// Do your cool postprocessing here
-					// color.r += sin(uv.x * 50.0);
-					color.r += step(0.5, uv.x);
+					color = mix(color, vec4(1.0), line);
 					
-					gl_FragColor = vec4(color, 1.0);
+					gl_FragColor = vec4(color);
 				}
 			`,
 			vertexShader: `
@@ -107,13 +111,16 @@ export default class WebGLView {
 					type: 't',
 					value: this.particlesRt.texture
 				},
-				uResolution: { value: resolution }
+				uResolution: { value: resolution },
+				uTime: {
+					value: 0.0
+				}
 			}
 		});
 
 		console.log(this.particlesRt.texture);
 
-		let renderTri = new THREE.Mesh(geometry, material);
+		let renderTri = new THREE.Mesh(geometry, this.triMaterial);
 		renderTri.frustumCulled = false;
 		this.scene.add(renderTri);
 	}
@@ -139,7 +146,7 @@ export default class WebGLView {
 	initLights() {
 		this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
 		this.pointLight.position.set(0, 0, 50);
-		this.scene.add(this.pointLight);
+		this.particlesRtScene.add(this.pointLight);
 	}
 
 	initObjects() {
@@ -260,6 +267,10 @@ export default class WebGLView {
 		const delta = this.clock.getDelta();
 		const time = performance.now() * 0.0005;
 
+		if (this.triMaterial) {
+			this.triMaterial.uniforms.uTime.value = time;
+		}
+
 		if (this.particleCount) {
 			this.updateParticles();
 		}
@@ -269,12 +280,15 @@ export default class WebGLView {
 
 	draw() {
 
-		this.renderer.setRenderTarget(this.RenderTriTarget);
+		this.renderer.setRenderTarget(this.particlesRt);
 		this.renderer.render(this.particlesRtScene, this.particlesRtCamera);
 		this.renderer.setRenderTarget(null);
 
-		if (this.composer && this.composer.enabled) this.composer.render();
-		else this.renderer.render(this.scene, this.camera);
+		// this.renderer.clear(true, false, false);
+		this.renderer.render(this.scene, this.camera);
+
+		// if (this.composer && this.composer.enabled) this.composer.render();
+		// else this.renderer.render(this.scene, this.camera);
 
 	}
 
