@@ -25,7 +25,8 @@
     "domready": "^1.0.8",
     "postprocessing": "^6.8.8",
     "stats.js": "^0.17.0",
-    "three": "^0.110.0"
+    "three": "^0.110.0",
+    "tweakpane": "^1.1.0"
   },
   "devDependencies": {
     "@babel/core": "^7.6.4",

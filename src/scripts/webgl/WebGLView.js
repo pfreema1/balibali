@@ -9,6 +9,7 @@ import {
 	BlendFunction
 } from 'postprocessing';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
+import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
 import fullScreenTriVert from '../../shaders/fullScreenTri.vert';
 
@@ -24,19 +25,36 @@ function remap(t, old_min, old_max, new_min, new_max) {
 export default class WebGLView {
 	constructor(app) {
 		this.app = app;
+		this.PARAMS = {
+			rotSpeed: 0.05
+		};
 
 		this.init();
 	}
 
 	async init() {
 		this.initThree();
-		this.initParticlesRenderTarget();
-		this.initObjects();
+		this.initBgScene();
+		this.initObject();
 		this.initLights();
 		this.initControls();
+		this.initTweakPane();
 		await this.loadLogoTexture();
 		// this.initPostProcessing();
 		this.initRenderTri();
+	}
+
+	initTweakPane() {
+		this.pane = new Tweakpane();
+
+		this.pane
+			.addInput(this.PARAMS, 'rotSpeed', {
+				min: 0.0,
+				max: 0.5
+			})
+			.on('change', value => {
+
+			});
 	}
 
 	initThree() {
@@ -97,7 +115,7 @@ export default class WebGLView {
 			uniforms: {
 				uScene: {
 					type: 't',
-					value: this.particlesRt.texture
+					value: this.bgRenderTarget.texture
 				},
 				uResolution: { value: resolution },
 				uTime: {
@@ -106,27 +124,27 @@ export default class WebGLView {
 			}
 		});
 
-		console.log(this.particlesRt.texture);
+		console.log(this.bgRenderTarget.texture);
 
 		let renderTri = new THREE.Mesh(geometry, this.triMaterial);
 		renderTri.frustumCulled = false;
 		this.scene.add(renderTri);
 	}
 
-	initParticlesRenderTarget() {
-		this.particlesRt = new THREE.WebGLRenderTarget(
+	initBgScene() {
+		this.bgRenderTarget = new THREE.WebGLRenderTarget(
 			window.innerWidth,
 			window.innerHeight
 		);
-		this.particlesRtCamera = new THREE.PerspectiveCamera(
+		this.bgCamera = new THREE.PerspectiveCamera(
 			50,
 			window.innerWidth / window.innerHeight,
 			0.01,
 			100
 		);
-		this.particlesRtCamera.position.z = 30;
+		this.bgCamera.position.z = 30;
 
-		this.particlesRtScene = new THREE.Scene();
+		this.bgScene = new THREE.Scene();
 	}
 
 	initControls() {
@@ -141,94 +159,20 @@ export default class WebGLView {
 	initLights() {
 		this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
 		this.pointLight.position.set(0, 0, 50);
-		this.particlesRtScene.add(this.pointLight);
+		this.bgScene.add(this.pointLight);
 	}
 
-	initObjects() {
-		this.particleCount = 100;
-		this.particles = [];
-
-		for (let i = 0; i < this.particleCount; i++) {
-			let mesh = this.createMesh();
-			this.randomizeTransform(mesh);
-			this.addAttributes(mesh);
-			this.particlesRtScene.add(mesh);
-			// this.scene.add(mesh);
-
-			this.particles.push(mesh);
-		}
-	}
-
-	addAttributes(mesh) {
-		mesh.speed = {
-			rotation: Math.random() * 0.01,
-			y: Math.random() * 0.03 + 0.01
-		};
-	}
-
-	randomizeTransform(mesh) {
-		/*
-				x range:  -30 to 30
-				y range:  -15 to 15
-				z range: 10 to -50
-		*/
-		mesh.position.x = remap(Math.random(), 0, 1, -30, 30);
-		mesh.position.y = remap(Math.random(), 0, 1, -15, 15);
-		mesh.position.z = remap(Math.random(), 0, 1, -20, 10);
-
-		mesh.rotation.x = Math.random() * 2 * Math.PI;
-		mesh.rotation.y = Math.random() * 2 * Math.PI;
-		mesh.rotation.z = Math.random() * 2 * Math.PI;
-	}
-
-	updateParticles() {
-		for (let i = 0; i < this.particleCount; i++) {
-			let particle = this.particles[i];
-
-			particle.position.y += particle.speed.y;
-
-			particle.rotation.x += particle.speed.rotation;
-			particle.rotation.z += particle.speed.rotation;
-
-			this.checkEdge(particle);
-		}
-	}
-
-	checkEdge(particle) {
-		if (particle.position.y > 15) {
-			particle.position.y = -15;
-		}
-	}
-
-	createMesh() {
-		let geo = new THREE.TetrahedronBufferGeometry(1, 0);
-		// let mat = new THREE.MeshPhongMaterial();
-		// mat.shininess = 100;
+	initObject() {
+		let geo = new THREE.TetrahedronBufferGeometry(10, 0);
 		let mat = new THREE.MeshPhysicalMaterial({
 			roughness: 0.5,
 			metalness: 0.3,
 			reflectivity: 1,
 			clearcoat: 1
 		});
-		return new THREE.Mesh(geo, mat);
-	}
+		this.tetra = new THREE.Mesh(geo, mat);
 
-	initPostProcessing() {
-		this.composer = new EffectComposer(this.renderer);
-		this.composer.enabled = false;
-
-		const renderPass = new RenderPass(this.scene, this.camera);
-		renderPass.renderToScreen = false;
-
-		const contrastEffect = new BrightnessContrastEffect({ contrast: 1 });
-		const contrastPass = new EffectPass(this.camera, contrastEffect);
-		contrastPass.renderToScreen = true;
-
-		this.composer.addPass(renderPass);
-		this.composer.addPass(contrastPass);
-
-		// kickstart composer
-		this.composer.render(1);
+		this.bgScene.add(this.tetra);
 	}
 
 	resize() {
@@ -244,9 +188,11 @@ export default class WebGLView {
 
 		this.renderer.setSize(window.innerWidth, window.innerHeight);
 
-		// this.composer.setSize(window.innerWidth, window.innerHeight);
-
 		if (this.trackball) this.trackball.handleResize();
+	}
+
+	updateTetra() {
+		this.tetra.rotation.y += this.PARAMS.rotSpeed;
 	}
 
 	update() {
@@ -257,21 +203,19 @@ export default class WebGLView {
 			this.triMaterial.uniforms.uTime.value = time;
 		}
 
-		if (this.particleCount) {
-			this.updateParticles();
+		if (this.tetra) {
+			this.updateTetra();
 		}
 
 		if (this.trackball) this.trackball.update();
 	}
 
 	draw() {
-		this.renderer.setRenderTarget(this.particlesRt);
-		this.renderer.render(this.particlesRtScene, this.particlesRtCamera);
+		this.renderer.setRenderTarget(this.bgRenderTarget);
+		this.renderer.render(this.bgScene, this.bgCamera);
 		this.renderer.setRenderTarget(null);
 
 		this.renderer.render(this.scene, this.camera);
 
-		// if (this.composer && this.composer.enabled) this.composer.render();
-		// else this.renderer.render(this.scene, this.camera);
 	}
 }
