@@ -1,6 +1,5 @@
 import * as THREE from 'three';
 import glslify from 'glslify';
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
 import fullScreenTriVert from '../../shaders/fullScreenTri.vert';
@@ -29,7 +28,6 @@ export default class WebGLView {
 		this.initBgScene();
 		this.initObject();
 		this.initLights();
-		this.initControls();
 		this.initTweakPane();
 		await this.loadLogoTexture();
 		this.initRenderTri();
@@ -136,15 +134,6 @@ export default class WebGLView {
 		this.bgCamera.position.z = 30;
 
 		this.bgScene = new THREE.Scene();
-	}
-
-	initControls() {
-		this.trackball = new TrackballControls(
-			this.camera,
-			this.renderer.domElement
-		);
-		this.trackball.rotateSpeed = 2.0;
-		this.trackball.enabled = true;
 	}
 
 	initLights() {
