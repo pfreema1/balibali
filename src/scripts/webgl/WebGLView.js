@@ -1,13 +1,5 @@
 import * as THREE from 'three';
 import glslify from 'glslify';
-import {
-	EffectComposer,
-	BrightnessContrastEffect,
-	EffectPass,
-	RenderPass,
-	ShaderPass,
-	BlendFunction
-} from 'postprocessing';
 import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls.js';
 import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
@@ -40,7 +32,6 @@ export default class WebGLView {
 		this.initControls();
 		this.initTweakPane();
 		await this.loadLogoTexture();
-		// this.initPostProcessing();
 		this.initRenderTri();
 	}
 

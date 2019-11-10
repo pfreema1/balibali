@@ -1,5 +1,4 @@
 import WebGLView from './webgl/WebGLView';
-import GUIView from './gui/GUIView';
 
 export default class App {
 
@@ -9,7 +8,6 @@ export default class App {
 
 	init() {
 		this.initWebGL();
-		this.initGUI();
 		this.addListeners();
 		this.animate();
 		this.resize();
@@ -18,10 +16,6 @@ export default class App {
 	initWebGL() {
 		this.webgl = new WebGLView(this);
 		document.querySelector('.container').appendChild(this.webgl.renderer.domElement);
-	}
-
-	initGUI() {
-		this.gui = new GUIView(this);
 	}
 
 	addListeners() {
@@ -43,13 +37,11 @@ export default class App {
 	// ---------------------------------------------------------------------------------------------
 
 	update() {
-		if (this.gui.stats) this.gui.stats.begin();
 		if (this.webgl) this.webgl.update();
 	}
 
 	draw() {
 		if (this.webgl) this.webgl.draw();
-		if (this.gui.stats) this.gui.stats.end();
 	}
 
 	// ---------------------------------------------------------------------------------------------
@@ -61,8 +53,7 @@ export default class App {
 	}
 
 	keyup(e) {
-		// g
-		if (e.keyCode == 71) { if (this.gui) this.gui.toggle(); }
+
 		// r
 		if (e.keyCode == 82) { if (this.webgl.trackball) this.webgl.trackball.reset(); }
 	}
