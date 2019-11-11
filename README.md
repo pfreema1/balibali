@@ -1,1 +1,1 @@
-boilerplate forked from https://github.com/brunoimbrizi/webpack-threejs
+design inspiration:  https://dribbble.com/shots/6993615-Senko-Holographic
