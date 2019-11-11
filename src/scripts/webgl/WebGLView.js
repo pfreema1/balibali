@@ -5,6 +5,7 @@ import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
 import fullScreenTriVert from '../../shaders/fullScreenTri.vert';
 import OrbitControls from 'three-orbitcontrols';
+import { BoxGeometry, MeshBasicMaterial } from 'three';
 
 function remap(t, old_min, old_max, new_min, new_max) {
 	let old_range = old_max - old_min;
@@ -32,7 +33,17 @@ export default class WebGLView {
 		this.initLights();
 		this.initTweakPane();
 		await this.loadTextMesh();
+		this.initScenePlane();
 		this.initRenderTri();
+	}
+
+	initScenePlane() {
+		let geo = new THREE.PlaneBufferGeometry(1, 1, 1);
+		let mat = new THREE.MeshBasicMaterial({
+			color: 0xffffff
+		});
+		this.scenePlane = new THREE.Mesh(geo, mat);
+		this.bgScene.add(this.scenePlane);
 	}
 
 	initTweakPane() {
@@ -70,7 +81,11 @@ export default class WebGLView {
 				this.textMesh = object.scene.children[0];
 				console.log(this.textMesh);
 				this.textMesh.add(new THREE.AxesHelper());
-				this.scene.add(this.textMesh);
+				this.textMesh.rotation.x += Math.PI / 2;
+				this.bgScene.add(this.textMesh);
+
+
+				// this.scene.add(new THREE.Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()))
 
 				res();
 			});
@@ -140,7 +155,7 @@ export default class WebGLView {
 			0.01,
 			100
 		);
-		this.bgCamera.position.z = 30;
+		this.bgCamera.position.z = 3;
 
 		this.bgScene = new THREE.Scene();
 	}
