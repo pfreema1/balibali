@@ -26,24 +26,24 @@ const preload = () => {
 			return p;
 		})
 	)
-	.then(([app]) => {
-		window.app = new app.default();
-		window.app.init();
-	})
-	.catch((e) => {
-		console.log('preload', e);
-	});
+		.then(([app]) => {
+			window.app = new app.default();
+			window.app.init();
+		})
+		.catch((e) => {
+			console.log('preload', e);
+		});
 }
 
 ready(() => {
 	// fetch manifest
 	fetchJSON('data/manifest.json')
-	// assets and main module
-	.then((response) => {
-		manifest = response;
-		return preload();
-	})
-	.catch((e) => {
-		console.log('ready', e);
-	});
+		// assets and main module
+		.then((response) => {
+			manifest = response;
+			return preload();
+		})
+		.catch((e) => {
+			console.log('ready', e);
+		});
 });

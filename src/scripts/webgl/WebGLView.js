@@ -1,8 +1,10 @@
 import * as THREE from 'three';
+import GLTFLoader from 'three-gltf-loader';
 import glslify from 'glslify';
 import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
 import fullScreenTriVert from '../../shaders/fullScreenTri.vert';
+import OrbitControls from 'three-orbitcontrols';
 
 function remap(t, old_min, old_max, new_min, new_max) {
 	let old_range = old_max - old_min;
@@ -29,7 +31,7 @@ export default class WebGLView {
 		this.initObject();
 		this.initLights();
 		this.initTweakPane();
-		await this.loadLogoTexture();
+		await this.loadTextMesh();
 		this.initRenderTri();
 	}
 
@@ -55,14 +57,21 @@ export default class WebGLView {
 		this.renderer.autoClear = true;
 
 		this.clock = new THREE.Clock();
+
+		this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 	}
 
-	loadLogoTexture() {
+	loadTextMesh() {
 		return new Promise((res, rej) => {
-			let loader = new THREE.TextureLoader();
+			let loader = new GLTFLoader();
 
-			loader.load('./logo-final-final.png', texture => {
-				this.logoTexture = texture;
+			loader.load('./bbali.glb', object => {
+				object;
+				this.textMesh = object.scene.children[0];
+				console.log(this.textMesh);
+				this.textMesh.add(new THREE.AxesHelper());
+				this.scene.add(this.textMesh);
+
 				res();
 			});
 		});
@@ -151,8 +160,9 @@ export default class WebGLView {
 			clearcoat: 1
 		});
 		this.tetra = new THREE.Mesh(geo, mat);
+		console.log('tetra:  ', this.tetra);
 
-		this.bgScene.add(this.tetra);
+		// this.bgScene.add(this.tetra);
 	}
 
 	resize() {
@@ -178,6 +188,8 @@ export default class WebGLView {
 	update() {
 		const delta = this.clock.getDelta();
 		const time = performance.now() * 0.0005;
+
+		this.controls.update();
 
 		if (this.triMaterial) {
 			this.triMaterial.uniforms.uTime.value = time;

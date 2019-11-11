@@ -26,6 +26,8 @@
     "postprocessing": "^6.8.8",
     "stats.js": "^0.17.0",
     "three": "^0.110.0",
+    "three-gltf-loader": "^1.110.0",
+    "three-orbitcontrols": "^2.110.1",
     "tweakpane": "^1.1.0"
   },
   "devDependencies": {
