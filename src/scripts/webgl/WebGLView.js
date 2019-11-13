@@ -5,7 +5,8 @@ import Tweakpane from 'tweakpane';
 import fullScreenTriFrag from '../../shaders/fullScreenTri.frag';
 import fullScreenTriVert from '../../shaders/fullScreenTri.vert';
 import OrbitControls from 'three-orbitcontrols';
-import { BoxGeometry, MeshBasicMaterial } from 'three';
+import TweenMax from 'TweenMax';
+import { MeshPhongMaterial } from 'three';
 
 function remap(t, old_min, old_max, new_min, new_max) {
 	let old_range = old_max - old_min;
@@ -24,11 +25,13 @@ export default class WebGLView {
 		};
 
 		this.init();
+
 	}
 
 	async init() {
 		this.initThree();
 		this.initBgScene();
+		this.initCubeCamera();
 		this.initObject();
 		this.initLights();
 		this.initTweakPane();
@@ -37,12 +40,20 @@ export default class WebGLView {
 		this.initRenderTri();
 	}
 
+	initCubeCamera() {
+		this.cubeCamera = new THREE.CubeCamera(1, 1000, 256);
+		this.cubeCamera.renderTarget.texture.generateMipmaps = true;
+		this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
+		this.bgScene.add(this.cubeCamera);
+	}
+
 	initScenePlane() {
 		let geo = new THREE.PlaneBufferGeometry(1, 1, 1);
-		let mat = new THREE.MeshBasicMaterial({
-			color: 0xffffff
+		this.planeMat = new THREE.MeshBasicMaterial({
+			color: 0xffffff,
+			envMap: this.cubeCamera.renderTarget.texture
 		});
-		this.scenePlane = new THREE.Mesh(geo, mat);
+		this.scenePlane = new THREE.Mesh(geo, this.planeMat);
 		this.bgScene.add(this.scenePlane);
 	}
 
@@ -84,6 +95,8 @@ export default class WebGLView {
 				this.textMesh.rotation.x += Math.PI / 2;
 				this.bgScene.add(this.textMesh);
 
+				this.textMesh.material = new MeshPhongMaterial();
+				this.textMesh.material.needsUpdate = true;
 
 				// this.scene.add(new THREE.Mesh(new BoxGeometry(1, 1, 1), new MeshBasicMaterial()))
 
@@ -165,8 +178,10 @@ export default class WebGLView {
 
 	initLights() {
 		this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
-		this.pointLight.position.set(0, 0, 50);
+		this.pointLight.position.set(0, 5, 10);
+		this.pointLightHelper = new THREE.PointLightHelper(this.pointLight, 1);
 		this.bgScene.add(this.pointLight);
+		this.bgScene.add(this.pointLightHelper);
 	}
 
 	initObject() {
@@ -215,6 +230,11 @@ export default class WebGLView {
 
 		if (this.tetra) {
 			this.updateTetra();
+		}
+
+		if (this.planeMat) {
+			this.cubeCamera.update(this.renderer, this.bgScene);
+
 		}
 
 		if (this.trackball) this.trackball.update();

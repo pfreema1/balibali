@@ -15,6 +15,11 @@ module.exports = {
     filename: 'scripts/[name].[chunkhash].js',
     chunkFilename: 'scripts/[name].[chunkhash].js'
   },
+  resolve: {
+    alias: {
+      'TweenMax': path.resolve(__root, './src/scripts/vendors/gsap/TweenMax.js')
+    }
+  },
   module: {
     rules: [
       {
