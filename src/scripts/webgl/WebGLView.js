@@ -41,7 +41,7 @@ export default class WebGLView {
 	}
 
 	initCubeCamera() {
-		this.cubeCamera = new THREE.CubeCamera(1, 1000, 256);
+		this.cubeCamera = new THREE.CubeCamera(0.01, 100, 256);
 		this.cubeCamera.renderTarget.texture.generateMipmaps = true;
 		this.cubeCamera.renderTarget.texture.minFilter = THREE.LinearMipmapLinearFilter;
 		this.bgScene.add(this.cubeCamera);
