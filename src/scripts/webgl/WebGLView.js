@@ -31,7 +31,6 @@ export default class WebGLView {
   async init() {
     this.initThree();
     this.initBgScene();
-    this.initCubeCamera();
     this.initObject();
     this.initLights();
     this.initTweakPane();
@@ -40,53 +39,35 @@ export default class WebGLView {
     this.initRenderTri();
   }
 
-  initCubeCamera() {
-    this.cubeCamera = new THREE.CubeCamera(0.01, 100, 512);
-    this.cubeCamera.renderTarget.texture.generateMipmaps = true;
-    this.cubeCamera.renderTarget.texture.minFilter =
-      THREE.LinearMipmapLinearFilter;
-    this.bgScene.add(this.cubeCamera);
-
-    // this.cubeCamera.position.z = 3;
-    // this.cubeCamera.rotation.y = Math.PI;
-
-    // TweenMax.to(this.cubeCamera.position, 3.0, {
-    //   z: 5,
-    //   repeat: -1
-    // });
-  }
-
   initScenePlane() {
-    let geo = new THREE.PlaneBufferGeometry(10, 10, 1);
+    let geo = new THREE.PlaneBufferGeometry(5, 3, 1);
     this.planeMat = new THREE.MeshBasicMaterial({
-      color: 0xffffff,
-      envMap: this.cubeCamera.renderTarget.texture
+      color: 0x00ffff,
+      transparent: true,
+      opacity: 0.7
     });
     this.scenePlane = new THREE.Mesh(geo, this.planeMat);
     this.bgScene.add(this.scenePlane);
 
-    this.cubeCamera.position.set(
-      this.scenePlane.position.x,
-      this.scenePlane.position.y,
-      this.scenePlane.position.z
-    );
+    this.scenePlane.position.y += 1;
+    this.scenePlane.position.x += 2;
 
     document.addEventListener('keydown', e => {
       if (e.keyCode == 37) {
         // left
-        this.scenePlane.position.x -= 0.5;
+        this.bgCamera.position.x -= 0.5;
       } else if (e.keyCode == 38) {
         // up
-        this.scenePlane.position.y += 0.5;
+        this.bgCamera.position.y += 0.5;
       } else if (e.keyCode == 39) {
         // right
-        this.scenePlane.position.x += 0.5;
+        this.bgCamera.position.x += 0.5;
       } else if (e.keyCode == 40) {
         // down
-        this.scenePlane.position.y -= 0.5;
+        this.bgCamera.position.y -= 0.5;
       }
 
-      console.log(this.scenePlane.position);
+      console.log(this.bgCamera.position);
     });
   }
 
@@ -218,7 +199,7 @@ export default class WebGLView {
   }
 
   initLights() {
-    this.pointLight = new THREE.PointLight(0xff0000, 1, 100);
+    this.pointLight = new THREE.PointLight(0x222222, 1, 100);
     this.pointLight.position.set(0, 5, 10);
     this.pointLightHelper = new THREE.PointLightHelper(this.pointLight, 1);
     this.bgScene.add(this.pointLight);
@@ -265,7 +246,7 @@ export default class WebGLView {
     for (let i = 0; i < this.textMeshes.length; i++) {
       let textMesh = this.textMeshes[i];
 
-      textMesh.position.z = Math.abs(Math.sin(time + i));
+      textMesh.scale.y = Math.abs(Math.sin(time + i));
     }
   }
 
@@ -283,14 +264,15 @@ export default class WebGLView {
       this.updateTetra();
     }
 
-    if (this.planeMat) {
-      this.planeMat.visible = false;
-      this.cubeCamera.update(this.renderer, this.bgScene);
-      this.planeMat.visible = true;
-    }
-
     if (this.textMeshes) {
       this.animateTextMeshes(time);
+
+      if (this.textMeshes.length !== 0) {
+        // debugger;
+        this.bgCamera.lookAt(
+          this.textMeshes[Math.floor(this.textMeshes.length / 2)].position
+        );
+      }
     }
 
     if (this.trackball) this.trackball.update();
