@@ -47,8 +47,8 @@ export default class WebGLView {
       THREE.LinearMipmapLinearFilter;
     this.bgScene.add(this.cubeCamera);
 
-    this.cubeCamera.position.z = 3;
-    this.cubeCamera.rotation.y = Math.PI;
+    // this.cubeCamera.position.z = 3;
+    // this.cubeCamera.rotation.y = Math.PI;
 
     // TweenMax.to(this.cubeCamera.position, 3.0, {
     //   z: 5,
@@ -64,6 +64,12 @@ export default class WebGLView {
     });
     this.scenePlane = new THREE.Mesh(geo, this.planeMat);
     this.bgScene.add(this.scenePlane);
+
+    this.cubeCamera.position.set(
+      this.scenePlane.position.x,
+      this.scenePlane.position.y,
+      this.scenePlane.position.z
+    );
 
     document.addEventListener('keydown', e => {
       if (e.keyCode == 37) {
@@ -278,7 +284,9 @@ export default class WebGLView {
     }
 
     if (this.planeMat) {
+      this.planeMat.visible = false;
       this.cubeCamera.update(this.renderer, this.bgScene);
+      this.planeMat.visible = true;
     }
 
     if (this.textMeshes) {
