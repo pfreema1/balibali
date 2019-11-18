@@ -8,14 +8,17 @@ import OrbitControls from 'three-orbitcontrols';
 import TweenMax from 'TweenMax';
 import { MeshPhongMaterial } from 'three';
 
-function remap(t, old_min, old_max, new_min, new_max) {
-  let old_range = old_max - old_min;
-  let normalizedT = t - old_min;
-  let normalizedVal = normalizedT / old_range;
-  let new_range = new_max - new_min;
-  let newVal = normalizedVal * new_range + new_min;
-  return newVal;
-}
+const radians = degrees => {
+  return (degrees * Math.PI) / 180;
+};
+
+const distance = (x1, y1, x2, y2) => {
+  return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+};
+
+const map = (value, start1, stop1, start2, stop2) => {
+  return ((value - start1) / (stop1 - start1)) * (stop2 - start2) + start2;
+};
 
 export default class WebGLView {
   constructor(app) {
@@ -40,13 +43,14 @@ export default class WebGLView {
   }
 
   initScenePlane() {
-    let geo = new THREE.PlaneBufferGeometry(5, 3, 1);
+    let geo = new THREE.PlaneBufferGeometry(5, 3, 32);
     this.planeMat = new THREE.MeshBasicMaterial({
       color: 0x00ffff,
       transparent: true,
       opacity: 0.7
     });
     this.scenePlane = new THREE.Mesh(geo, this.planeMat);
+    this.scenePlane.name = 'background scene plane';
     this.bgScene.add(this.scenePlane);
 
     this.scenePlane.position.y += 1;
@@ -91,6 +95,20 @@ export default class WebGLView {
     this.renderer.autoClear = true;
 
     this.clock = new THREE.Clock();
+
+    this.raycaster = new THREE.Raycaster();
+
+    this.mouse = new THREE.Vector2();
+
+    this.width = window.innerWidth;
+    this.height = window.innerHeight;
+
+    window.addEventListener('mousemove', this.onMouseMove.bind(this));
+  }
+
+  onMouseMove({ clientX, clientY }) {
+    this.mouse.x = (clientX / this.width) * 2 - 1;
+    this.mouse.y = -(clientY / this.height) * 2 + 1;
   }
 
   loadTextMesh() {
@@ -99,7 +117,6 @@ export default class WebGLView {
 
       loader.load('./bbali.glb', object => {
         let textMesh = object.scene.children[0].clone();
-        textMesh.add(new THREE.AxesHelper());
         textMesh.rotation.x += Math.PI / 2;
 
         textMesh.material = new MeshPhongMaterial();
@@ -190,16 +207,16 @@ export default class WebGLView {
       0.01,
       100
     );
-    this.controls = new OrbitControls(this.bgCamera, this.renderer.domElement);
+    // this.controls = new OrbitControls(this.bgCamera, this.renderer.domElement);
 
     this.bgCamera.position.z = 3;
-    this.controls.update();
+    // this.controls.update();
 
     this.bgScene = new THREE.Scene();
   }
 
   initLights() {
-    this.pointLight = new THREE.PointLight(0x222222, 1, 100);
+    this.pointLight = new THREE.PointLight(0x222222, 10, 100);
     this.pointLight.position.set(0, 5, 10);
     this.pointLightHelper = new THREE.PointLightHelper(this.pointLight, 1);
     this.bgScene.add(this.pointLight);
@@ -250,11 +267,32 @@ export default class WebGLView {
     }
   }
 
+  handleRayCasting() {
+    this.raycaster.setFromCamera(this.mouse, this.bgCamera);
+    // console.log(this.mouse);
+
+    let intersects = this.raycaster.intersectObjects([this.scenePlane]);
+
+    if (intersects.length) {
+      const { x, y } = intersects[0].point;
+
+      for (let i = 0; i < this.textMeshes.length; i++) {
+        const mesh = this.textMeshes[i];
+
+        const mouseDistance = distance(x, y, mesh.position.x, mesh.position.y);
+
+        const scaleY = map(mouseDistance, 0, 6, 0, 5);
+
+        mesh.scale.y = scaleY;
+      }
+    }
+  }
+
   update() {
     const delta = this.clock.getDelta();
     const time = performance.now() * 0.0005;
 
-    this.controls.update();
+    // this.controls.update();
 
     if (this.triMaterial) {
       this.triMaterial.uniforms.uTime.value = time;
@@ -265,7 +303,7 @@ export default class WebGLView {
     }
 
     if (this.textMeshes) {
-      this.animateTextMeshes(time);
+      //   this.animateTextMeshes(time);
 
       if (this.textMeshes.length !== 0) {
         // debugger;
@@ -273,6 +311,10 @@ export default class WebGLView {
           this.textMeshes[Math.floor(this.textMeshes.length / 2)].position
         );
       }
+    }
+
+    if (this.raycaster && this.scenePlane) {
+      this.handleRayCasting();
     }
 
     if (this.trackball) this.trackball.update();
